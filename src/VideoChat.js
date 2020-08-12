@@ -1,4 +1,5 @@
 import React from 'react';
+import Peer from 'peerjs';
 import Avatar from '@material-ui/core/Avatar';
 import Button from '@material-ui/core/Button';
 import CssBaseline from '@material-ui/core/CssBaseline';
@@ -67,6 +68,12 @@ const useStyles = makeStyles((theme) => ({
 export default function VideoChat(props) {
   const classes = useStyles();
   console.log(props);
+  console.log("connected");
+  props.props.state.thisPeer.listAllPeers(function(res){
+    res.forEach((item,index)=>{
+      console.log(item); 
+    });
+  });
   return (
     <Container component="main" maxWidth="xs">
       <CssBaseline />
@@ -82,6 +89,7 @@ export default function VideoChat(props) {
             />
 	      </Card>
 	      <Button
+          onClick={props.props.searchPeers}
 	        variant="contained"
 	        color="primary"
 	        className={classes.submit}>
