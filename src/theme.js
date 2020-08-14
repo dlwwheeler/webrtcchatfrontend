@@ -18,7 +18,7 @@ let minitheme = createMuiTheme({
     },
   },
 });
-let moreTheme = {
+let moreTheme = createMuiTheme({
   paper: {
     marginTop: minitheme.spacing(8),
     display: 'flex',
@@ -51,7 +51,7 @@ let moreTheme = {
   },
   avatar: {
   },
-};
+});
 let theme = {...minitheme, ...moreTheme};
 
 export default theme;

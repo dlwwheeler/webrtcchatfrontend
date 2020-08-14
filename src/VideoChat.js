@@ -34,19 +34,28 @@ function Copyright() {
 class VideoChat extends React.Component {
   constructor(props){
     super(props);
-    this.state = { peers: [],peer:{}, media: props.props.media, classes: {},videos:[]};
+    this.state = { peers: [], connectedPeers: [], peer:{}, media: props.props.media, classes: {},videos:[]};
+    this.state.connectedPeers.push(props.props.peerID);
     this.searchPeers = this.searchPeers.bind(this);
     this.applyVideoToPeer = this.applyVideoToPeer.bind(this);
     this.addPeer = this.addPeer.bind(this);
-    this.state.peer = new Peer(props.props.peerID, {host:"js.devan-wheeler.net", port:9000, secure:true});
+    this.state.peer = new Peer(props.props.peerID, {host:"js.devan-wheeler.net", port:9000,debug:1, secure:true});
     var peer = this.state.peer;
     var media = this.state.media;
     var constThis = this;
     this.searchPeers();
-    var video = media({video: true, audio: true}, function(stream){
-      video={peerID: peer.id,video: stream};
-      constThis.applyVideoToPeer(video);
+    var video;
+    media({video: true, audio: true}, function(stream){
+      stream.peerID = props.props.peerID;
+      constThis.applyVideoToPeer(stream);
     });
+    this.state.peer.on('call', function(call){
+      call.answer(video); 
+      call.on('stream',function(remoteStream) {
+        constThis.applyVideoToPeer(remoteStream);
+      });
+    });
+
   }
   applyVideoToPeer(video){
     this.setState({videos: this.state.videos.concat(video)}); 
@@ -62,13 +71,17 @@ class VideoChat extends React.Component {
   }
   addPeer(peerID){
     var constThis = this;
-    console.log("sent to:", peerID);
+    if(this.state.connectedPeers.includes(peerID)){
+      return;
+    }
+    this.setState({connectedPeers: this.state.connectedPeers.concat(peerID)});    
     this.state.media({video: true, audio: true}, function(stream) {
-          var call = constThis.state.peer.call(peerID, stream);
-          console.log(call);
+          stream.peerID = peerID
+          var call = constThis.state.peer.call(peerID,  stream);
           call.on('stream', function(remoteStream){
+            remoteStream.peerID = peerID;
             console.log("recieved:", remoteStream);
-            this.applyVideoToPeer({peerID: peerID, video:remoteStream});
+            constThis.applyVideoToPeer(remoteStream);
           });
       }, function (err) {
       console.log(err);
@@ -92,8 +105,8 @@ class VideoChat extends React.Component {
 	          <CardMedia className={JSON.stringify(Theme.media)}
               component="video"
               >
-              <video key={value.video}>
-                <source src={value.video}/>
+              <video key={value}>
+                <source src={value}/>
               </video>
             </CardMedia>
 	      </Card>
@@ -110,7 +123,6 @@ class VideoChat extends React.Component {
         {this.state.peers.map((value,index)=>{
         return(
         <ListItem button key={index} onClick={()=>{
-          console.log(value);
           this.addPeer(value);}}>
           <ListItemText primary={value}/>
         </ListItem>
