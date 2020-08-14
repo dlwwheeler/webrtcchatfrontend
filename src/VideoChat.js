@@ -55,7 +55,9 @@ class VideoChat extends React.Component {
   searchPeers(){ 
     var allPeers;
     this.state.peer.listAllPeers((list)=>{
+      console.log(list);
       this.setState({peers: list}); 
+      console.log(this.state.peers);
     });
   }
   addPeer(peerID){
@@ -107,7 +109,9 @@ class VideoChat extends React.Component {
       <List>
         {this.state.peers.map((value,index)=>{
         return(
-        <ListItem button key={index} onClick={()=>{this.addPeer(value)}}>
+        <ListItem button key={index} onClick={()=>{
+          console.log(value);
+          this.addPeer(value);}}>
           <ListItemText primary={value}/>
         </ListItem>
         )})}
