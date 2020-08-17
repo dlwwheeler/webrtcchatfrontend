@@ -1,4 +1,6 @@
 import React from 'react';
+import Video from './Video';
+import { VideoHTMLAttributes, useEffect, useRef } from 'react'
 import Peer from 'peerjs';
 import Button from '@material-ui/core/Button';
 import CssBaseline from '@material-ui/core/CssBaseline';
@@ -17,6 +19,7 @@ import { Player } from 'video-react';
 import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
 import ListItemText from '@material-ui/core/ListItemText';
+import Webcam from "react-webcam";
 
 function Copyright() {
   return (
@@ -30,61 +33,63 @@ function Copyright() {
   );
 }
 
-
 class VideoChat extends React.Component {
   constructor(props){
     super(props);
-    this.state = { peers: [], connectedPeers: [], peer:{}, media: props.props.media, classes: {},videos:[]};
-    this.state.connectedPeers.push(props.props.peerID);
+    this.state = { peers: [], connectedPeers: [], peer:{}, media, classes: {},videos:[],video:{}};
     this.searchPeers = this.searchPeers.bind(this);
     this.applyVideoToPeer = this.applyVideoToPeer.bind(this);
+    this.initVideo = this.initVideo.bind(this);
     this.addPeer = this.addPeer.bind(this);
     this.state.peer = new Peer(props.props.peerID, {host:"js.devan-wheeler.net", port:9000,debug:1, secure:true});
-    var peer = this.state.peer;
+    const peer = this.state.peer;
     var media = this.state.media;
-    var constThis = this;
+    const constThis = this;
     this.searchPeers();
-    var video;
-    media({video: true, audio: true}, function(stream){
-      stream.peerID = props.props.peerID;
-      constThis.applyVideoToPeer(stream);
-    });
-    this.state.peer.on('call', function(call){
-      call.answer(video); 
+    peer.on('call', function(call){
+      if(constThis.state.video){
+      console.log("recieved");
+      call.answer(constThis.state.video); 
+      }
       call.on('stream',function(remoteStream) {
-        constThis.applyVideoToPeer(remoteStream);
+        console.log(remoteStream);
+        if(!constThis.state.connectedPeers.includes(call.metadata.peerID)){
+          constThis.setState({connectedPeers: constThis.state.connectedPeers.concat(call.metadata.peerID)});
+          constThis.applyVideoToPeer({video:remoteStream, peerID: call.metadata.peerID});
+        }
       });
     });
-
   }
   applyVideoToPeer(video){
-    this.setState({videos: this.state.videos.concat(video)}); 
-    console.log(this.state.videos);
+    if(video.peerID){
+      this.setState({videos: this.state.videos.concat({video:video.video,peerID: video.peerID})});
+    }
+  }
+  initVideo(){
+    this.setState({video: this.webcam.stream});
   }
   searchPeers(){ 
     var allPeers;
     this.state.peer.listAllPeers((list)=>{
-      console.log(list);
       this.setState({peers: list}); 
-      console.log(this.state.peers);
     });
   }
   addPeer(peerID){
-    var constThis = this;
-    if(this.state.connectedPeers.includes(peerID)){
+    const constThis = this;
+    console.log(peerID);
+    if(this.state.connectedPeers.includes(peerID)||peerID===this.state.peer.id){
       return;
     }
-    this.setState({connectedPeers: this.state.connectedPeers.concat(peerID)});    
-    this.state.media({video: true, audio: true}, function(stream) {
-          stream.peerID = peerID
-          var call = constThis.state.peer.call(peerID,  stream);
-          call.on('stream', function(remoteStream){
-            remoteStream.peerID = peerID;
-            console.log("recieved:", remoteStream);
-            constThis.applyVideoToPeer(remoteStream);
-          });
-      }, function (err) {
-      console.log(err);
+      var metadata = {peerID : this.state.peer.id, connectedPeers : constThis.state.connectedPeers};
+      const peer = this.state.peer;
+      var call = peer.call(peerID,  this.state.video, {metadata: metadata});
+      call.on('stream', function(remoteStream){
+      console.log(remoteStream, call.metadata.peerID);
+      if(!constThis.state.connectedPeers.includes(call.metadata.peerID)){
+        console.log("add video");
+        constThis.applyVideoToPeer({video:remoteStream,peerID: call.metadata.peerID});
+        constThis.setState({connectedPeers : constThis.state.connectedPeers.concat(call.metadata.peerID)});
+      }
     });
   }
     
@@ -96,20 +101,25 @@ class VideoChat extends React.Component {
         <Typography component="h1" variant="h5">
           Video Chat
         </Typography>
+        <Webcam
+          ref={e => this.webcam = e}
+          onUserMedia={this.initVideo}
+        />
         {this.state.videos.map((value,index) => {
         return (
-	      <Card key={index} className={JSON.stringify(Theme.form)}>
+	      /*<Card key={index} className={JSON.stringify(Theme.form)}>
 	        <CardHeader title={`${value.peerID}`}
             className={JSON.stringify(Theme.avatar)}
             />
 	          <CardMedia className={JSON.stringify(Theme.media)}
-              component="video"
               >
-              <video key={value}>
-                <source src={value}/>
-              </video>
+              <Video props={value.video}/>
             </CardMedia>
 	      </Card>
+        */
+        <div key={index}>
+          <Video props={value.video}/>
+        </div>
         )})}
 	      <Button
           onClick={this.searchPeers}
