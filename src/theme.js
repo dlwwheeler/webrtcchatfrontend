@@ -52,6 +52,6 @@ let moreTheme = createMuiTheme({
   avatar: {
   },
 });
-let theme = {...minitheme, ...moreTheme};
+const theme = {...minitheme, ...moreTheme};
 
 export default theme;

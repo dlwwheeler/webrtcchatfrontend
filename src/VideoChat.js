@@ -48,11 +48,10 @@ class VideoChat extends React.Component {
     this.searchPeers();
     peer.on('call', function(call){
       if(constThis.state.video){
-      console.log("recieved");
+      console.log("recieved for initfunc");
       call.answer(constThis.state.video); 
       }
       call.on('stream',function(remoteStream) {
-        console.log(remoteStream);
         if(!constThis.state.connectedPeers.includes(call.metadata.peerID)){
           constThis.setState({connectedPeers: constThis.state.connectedPeers.concat(call.metadata.peerID)});
           constThis.applyVideoToPeer({video:remoteStream, peerID: call.metadata.peerID});
@@ -62,7 +61,7 @@ class VideoChat extends React.Component {
   }
   applyVideoToPeer(video){
     if(video.peerID){
-      this.setState({videos: this.state.videos.concat({video:video.video,peerID: video.peerID})});
+      this.setState((state,props)=>({videos: state.videos.concat({video:video.video,peerID: video.peerID})}));
     }
   }
   initVideo(){
@@ -76,7 +75,6 @@ class VideoChat extends React.Component {
   }
   addPeer(peerID){
     const constThis = this;
-    console.log(peerID);
     if(this.state.connectedPeers.includes(peerID)||peerID===this.state.peer.id){
       return;
     }
@@ -86,9 +84,9 @@ class VideoChat extends React.Component {
       call.on('stream', function(remoteStream){
       console.log(remoteStream, call.metadata.peerID);
       if(!constThis.state.connectedPeers.includes(call.metadata.peerID)){
-        console.log("add video");
+        console.log("recieved for addPeer function");
+        constThis.setState((state, props)=>({connectedPeers : state.connectedPeers.concat(call.metadata.peerID)}));
         constThis.applyVideoToPeer({video:remoteStream,peerID: call.metadata.peerID});
-        constThis.setState({connectedPeers : constThis.state.connectedPeers.concat(call.metadata.peerID)});
       }
     });
   }
