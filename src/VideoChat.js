@@ -39,6 +39,7 @@ class VideoChat extends React.Component {
     this.state = { peers: [], connectedPeers: [], peer:{}, media, classes: {},videos:[],video:{}};
     this.searchPeers = this.searchPeers.bind(this);
     this.applyVideoToPeer = this.applyVideoToPeer.bind(this);
+    this.removeVideoFromPeer = this.removeVideoFromPeer.bind(this);
     this.initVideo = this.initVideo.bind(this);
     this.addPeer = this.addPeer.bind(this);
     this.state.peer = new Peer(props.props.peerID, {host:"js.devan-wheeler.net", port:9000,debug:1, secure:true});
@@ -57,11 +58,26 @@ class VideoChat extends React.Component {
           constThis.applyVideoToPeer({video:remoteStream, peerID: call.metadata.peerID});
         }
       });
+      call.on('close',()=>{
+        constThis.setState((state, props)=>({connectedPeers : state.connectedPeers.filter((value,index,arr)=>{return value!=call.metadata.peerID})}));
+        constThis.removeVideoFromPeer(call.metadata.peerID);
+      });
+    });
+    window.addEventListener("beforeunload", (ev) => 
+    {  
+      peer.destroy();
+      ev.preventDefault();
+      return ev.returnValue = 'Are you sure you want to close?';
     });
   }
   applyVideoToPeer(video){
     if(video.peerID){
       this.setState((state,props)=>({videos: state.videos.concat({video:video.video,peerID: video.peerID})}));
+    }
+  }
+  removeVideoFromPeer(peerID){
+    if(peerID){
+      this.setState((state,props)=>({videos: state.videos.filter((value,index,arr)=>{return value!=peerID;})}));
     }
   }
   initVideo(){
@@ -88,7 +104,14 @@ class VideoChat extends React.Component {
         constThis.setState((state, props)=>({connectedPeers : state.connectedPeers.concat(call.metadata.peerID)}));
         constThis.applyVideoToPeer({video:remoteStream,peerID: call.metadata.peerID});
       }
-    });
+      });
+      call.on('close',()=>{
+        constThis.setState((state, props)=>({connectedPeers : state.connectedPeers.filter((value,index,arr)=>{return value!=call.metadata.peerID})}));
+        constThis.removeVideoFromPeer(call.metadata.peerID);
+      });
+  }
+  componentWillUnmount(){
+    this.state.peer.destroy();
   }
     
   render() {
